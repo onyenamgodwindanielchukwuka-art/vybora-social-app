@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#11102b">
+<title>VYBORA — One World. Many Connections.</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f6f5fc;color:#19172e}
+header{background:#11102b;color:white;padding:18px 20px;display:flex;justify-content:space-between;align-items:center}
+.logo{font-size:25px;font-weight:900;letter-spacing:2px;color:#c8a8ff}
+header span{font-size:12px;color:#ddd}
+main{max-width:760px;margin:auto;padding:22px 16px}
+.hero{background:linear-gradient(135deg,#21164a,#6743a5);color:white;padding:30px 23px;border-radius:22px}
+.hero h1{font-size:34px;margin:0 0 12px}
+.hero p{line-height:1.6;color:#eee}
+button{border:0;border-radius:12px;padding:13px 18px;font-weight:bold;cursor:pointer}
+.primary{background:#d8bdff;color:#241347}
+.secondary{background:white;color:#39235d;margin-left:7px}
+.section-title{margin:28px 0 12px}
+.card{background:white;border:1px solid #e9e5f2;border-radius:17px;padding:17px;margin:12px 0}
+.post-top{display:flex;align-items:center;gap:10px}
+.avatar{width:42px;height:42px;border-radius:50%;background:#e5d5ff;display:grid;place-items:center;font-weight:bold;color:#4b287e}
+.muted{color:#777;font-size:13px}
+nav{display:flex;justify-content:space-around;background:white;padding:15px 5px;position:sticky;bottom:0;border-top:1px solid #e8e4ef}
+nav button{background:transparent;color:#554477;padding:10px 8px}
+footer{text-align:center;color:#777;font-size:12px;padding:25px}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">VYBORA</div>
+  <span>ONE WORLD. MANY CONNECTIONS.</span>
+</header>
+
+<main>
+  <section class="hero">
+    <h1>Your world.<br>Your people.</h1>
+    <p>Discover communities, share your moments and connect with people everywhere.</p>
+    <button class="primary" onclick="notice('Account registration will be connected next.')">Join VYBORA</button>
+    <button class="secondary" onclick="notice('Login will be connected next.')">Log in</button>
+  </section>
+
+  <h2 class="section-title">Explore VYBORA</h2>
+  <div class="card">
+    <h3>🌍 Discover people</h3>
+    <p class="muted">Find people and communities from around the world.</p>
+  </div>
+  <div class="card">
+    <h3>💬 Connect and chat</h3>
+    <p class="muted">Build friendships and meaningful conversations.</p>
+  </div>
+  <div class="card">
+    <h3>✨ Share your moments</h3>
+    <p class="muted">Your ideas, photos and stories deserve a place.</p>
+  </div>
+
+  <h2 class="section-title">Community preview</h2>
+  <div class="card">
+    <div class="post-top">
+      <div class="avatar">V</div>
+      <div><strong>VYBORA Community</strong><div class="muted">Welcome to a new connection.</div></div>
+    </div>
+    <p>Every great connection starts with a hello. 🌎</p>
+    <button onclick="notice('Likes will be enabled when we connect the database.')">♡ Like</button>
+    <button onclick="notice('Comments will be enabled soon.')">Comment</button>
+  </div>
+  <p class="muted">This is the first visual version. Accounts, posts and messaging will become real when we connect the backend.</p>
+</main>
+
+<nav>
+  <button onclick="window.scrollTo(0,0)">⌂ Home</button>
+  <button onclick="notice('Discovery is coming next.')">⌕ Explore</button>
+  <button onclick="notice('Communities are coming next.')">◎ Groups</button>
+  <button onclick="notice('Your profile will be available after registration.')">♙ Profile</button>
+</nav>
+
+<footer>© 2026 VYBORA · One World. Many Connections.</footer>
+
+<script>
+function notice(message){alert(message)}
+</script>
+</body>
+  </html>
