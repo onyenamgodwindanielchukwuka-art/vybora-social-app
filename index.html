@@ -183,6 +183,22 @@ document.getElementById("auth-form").addEventListener("submit", async function(e
 </script>
 <section id="vybora-profile" style="display:none;max-width:600px;margin:30px auto;padding:24px;background:#f8f1ff;border-radius:16px;color:#24152f;text-align:center">
   <h2>My VYBORA Profile</h2>
+  <div style="margin:15px 0">
+  <img id="profile-avatar"
+       src=""
+       alt="Profile picture"
+       style="width:110px;height:110px;border-radius:50%;object-fit:cover;background:#eadcf5">
+
+  <br><br>
+
+  <input id="avatar-file"
+         type="file"
+         accept="image/jpeg,image/png,image/webp">
+
+  <button id="upload-avatar-btn" type="button">
+    Upload Profile Picture
+  </button>
+</div>
   <div id="profile-name" style="font-size:22px;font-weight:bold"></div>
   <p id="profile-username"></p>
   <p id="profile-bio"></p>
@@ -218,7 +234,7 @@ async function loadVyboraProfile() {
 
   const { data: profile, error: profileError } = await client
     .from("profiles")
-    .select("username, display_name, bio")
+    .select("username, display_name, bio, avatar_url")
     .eq("id", session.user.id)
     .single();
 
@@ -228,7 +244,14 @@ async function loadVyboraProfile() {
     message.textContent = "Could not load your profile: " + profileError.message;
     return;
   }
+const avatar = document.getElementById("profile-avatar");
 
+if (profile.avatar_url) {
+  avatar.src = profile.avatar_url;
+  avatar.style.display = "inline-block";
+} else {
+  avatar.removeAttribute("src");
+}
   document.getElementById("profile-name").textContent =
     profile.display_name || "VYBORA Member";
 
@@ -299,6 +322,64 @@ document.getElementById("save-profile-btn").addEventListener("click", async func
   document.getElementById("profile-bio").textContent = newBio || "Welcome to VYBORA!";
   document.getElementById("edit-profile-form").style.display = "none";
   message.textContent = "Profile updated successfully!";
+});
+  document.getElementById("upload-avatar-btn").addEventListener("click", async function() {
+  const message = document.getElementById("profile-message");
+  const file = document.getElementById("avatar-file").files[0];
+
+  if (!file) {
+    message.textContent = "Please choose a picture first.";
+    return;
+  }
+
+  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+    message.textContent = "Please choose a JPG, PNG, or WEBP image.";
+    return;
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    message.textContent = "Image must be 5 MB or smaller.";
+    return;
+  }
+
+  const { data: { session } } = await client.auth.getSession();
+
+  if (!session) {
+    message.textContent = "Please log in first.";
+    return;
+  }
+
+  message.textContent = "Uploading picture...";
+
+  const fileExt = file.name.split(".").pop().toLowerCase();
+  const filePath = `${session.user.id}/avatar-${Date.now()}.${fileExt}`;
+
+  const { error: uploadError } = await client.storage
+    .from("avatars")
+    .upload(filePath, file, { contentType: file.type });
+
+  if (uploadError) {
+    message.textContent = "Upload failed: " + uploadError.message;
+    return;
+  }
+
+  const { data: publicUrlData } = client.storage
+    .from("avatars")
+    .getPublicUrl(filePath);
+
+  const avatarUrl = publicUrlData.publicUrl;
+
+  const { error: updateError } = await client.from("profiles")
+    .update({ avatar_url: avatarUrl })
+    .eq("id", session.user.id);
+
+  if (updateError) {
+    message.textContent = "Picture uploaded, but profile update failed: " + updateError.message;
+    return;
+  }
+
+  document.getElementById("profile-avatar").src = avatarUrl;
+  message.textContent = "Profile picture updated!";
 });
 </script>
 </body>
