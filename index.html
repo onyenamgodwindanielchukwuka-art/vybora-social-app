@@ -181,5 +181,70 @@ document.getElementById("auth-form").addEventListener("submit", async function(e
   }
 });
 </script>
+<section id="vybora-profile" style="display:none;max-width:600px;margin:30px auto;padding:24px;background:#f8f1ff;border-radius:16px;color:#24152f;text-align:center">
+  <h2>My VYBORA Profile</h2>
+  <div id="profile-name" style="font-size:22px;font-weight:bold"></div>
+  <p id="profile-username"></p>
+  <p id="profile-bio"></p>
+  <p id="profile-email"></p>
+  <button id="profile-logout" type="button">Log out</button>
+  <p id="profile-message"></p>
+</section>
+
+<script>
+async function loadVyboraProfile() {
+  const box = document.getElementById("vybora-profile");
+  const message = document.getElementById("profile-message");
+
+  const { data: { session }, error } = await client.auth.getSession();
+
+  if (error || !session) {
+    box.style.display = "none";
+    return;
+  }
+
+  const { data: profile, error: profileError } = await client
+    .from("profiles")
+    .select("username, display_name, bio")
+    .eq("id", session.user.id)
+    .single();
+
+  box.style.display = "block";
+
+  if (profileError) {
+    message.textContent = "Could not load your profile: " + profileError.message;
+    return;
+  }
+
+  document.getElementById("profile-name").textContent =
+    profile.display_name || "VYBORA Member";
+
+  document.getElementById("profile-username").textContent =
+    "@" + (profile.username || "");
+
+  document.getElementById("profile-bio").textContent =
+    profile.bio || "Welcome to VYBORA!";
+
+  document.getElementById("profile-email").textContent =
+    session.user.email || "";
+}
+
+document.getElementById("profile-logout").addEventListener("click", async function() {
+  const { error } = await client.auth.signOut();
+
+  if (error) {
+    document.getElementById("profile-message").textContent = error.message;
+    return;
+  }
+
+  document.getElementById("vybora-profile").style.display = "none";
+  alert("You have logged out of VYBORA.");
+});
+client.auth.onAuthStateChange(() => {
+  setTimeout(loadVyboraProfile, 0);
+});
+loadVyboraProfile();
+
+</script>
 </body>
   </html>
