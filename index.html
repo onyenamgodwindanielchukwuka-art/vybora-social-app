@@ -81,5 +81,105 @@ footer{text-align:center;color:#777;font-size:12px;padding:25px}
 <script>
 function notice(message){alert(message)}
 </script>
+  <div id="vybora-auth" style="display:none;position:fixed;inset:0;background:#11102beF;z-index:9999;padding:20px;overflow:auto">
+  <div style="max-width:400px;margin:50px auto;background:white;padding:25px;border-radius:18px">
+    <h2 id="auth-title">Join VYBORA</h2>
+    <form id="auth-form">
+      <input id="auth-name" placeholder="Your display name" required style="width:100%;padding:13px;margin:8px 0">
+      <input id="auth-username" placeholder="Choose a username" required style="width:100%;padding:13px;margin:8px 0">
+      <input id="auth-email" type="email" placeholder="Email address" required style="width:100%;padding:13px;margin:8px 0">
+      <input id="auth-password" type="password" placeholder="Password (at least 8 characters)" minlength="8" required style="width:100%;padding:13px;margin:8px 0">
+      <button type="submit" style="width:100%;padding:14px;background:#6743a5;color:white">Continue</button>
+    </form>
+    <p id="auth-message"></p>
+    <button id="auth-switch" type="button">Already have an account? Log in</button>
+    <button type="button" onclick="document.getElementById('vybora-auth').style.display='none'">Close</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const VYBORA_URL = "https://vvtsarowbbnomyurgsrw.supabase.co";
+const VYBORA_KEY = "sb_publishable_6dcKDgn1JzycYRAZn_darQ_dFkyAaZk";
+const client = supabase.createClient(VYBORA_URL, VYBORA_KEY);
+
+let authMode = "signup";
+
+function openVyboraAuth(mode) {
+  authMode = mode;
+  document.getElementById("vybora-auth").style.display = "block";
+  document.getElementById("auth-title").textContent =
+    mode === "signup" ? "Join VYBORA" : "Welcome back";
+  document.getElementById("auth-name").style.display =
+    mode === "signup" ? "block" : "none";
+  document.getElementById("auth-username").style.display =
+    mode === "signup" ? "block" : "none";
+  document.getElementById("auth-name").required = mode === "signup";
+  document.getElementById("auth-username").required = mode === "signup";
+  document.getElementById("auth-switch").textContent =
+    mode === "signup" ? "Already have an account? Log in" : "Need an account? Sign up";
+  document.getElementById("auth-message").textContent = "";
+}
+
+document.addEventListener("click", function(event) {
+  const button = event.target.closest("button");
+  if (!button) return;
+
+  if (button.textContent.trim() === "Join VYBORA") {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    openVyboraAuth("signup");
+  } else if (button.textContent.trim() === "Log in") {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    openVyboraAuth("login");
+  }
+}, true);
+
+document.getElementById("auth-switch").addEventListener("click", function() {
+  openVyboraAuth(authMode === "signup" ? "login" : "signup");
+  });
+document.getElementById("auth-form").addEventListener("submit", async function(event) {
+  event.preventDefault();
+
+  const message = document.getElementById("auth-message");
+  const email = document.getElementById("auth-email").value.trim();
+  const password = document.getElementById("auth-password").value;
+
+  message.textContent = "Please wait...";
+
+  try {
+    if (authMode === "signup") {
+      const name = document.getElementById("auth-name").value.trim();
+      const username = document.getElementById("auth-username").value.trim().toLowerCase();
+
+      if (!/^[a-z0-9_]{3,20}$/.test(username)) {
+        throw new Error("Username must be 3–20 characters: letters, numbers or underscores.");
+      }
+
+      const { data, error } = await client.auth.signUp({
+        email,
+        password,
+        options: { data: { display_name: name, username } }
+      });
+
+      if (error) throw error;
+
+      message.textContent = data.session
+        ? "Your VYBORA account is ready!"
+        : "Check your email to confirm your account, then log in.";
+
+    } else {
+      const { error } = await client.auth.signInWithPassword({ email, password });
+
+      if (error) throw error;
+
+      message.textContent = "Welcome back to VYBORA!";
+    }
+  } catch (error) {
+    message.textContent = error.message;
+  }
+});
+</script>
 </body>
   </html>
