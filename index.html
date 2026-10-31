@@ -187,6 +187,19 @@ document.getElementById("auth-form").addEventListener("submit", async function(e
   <p id="profile-username"></p>
   <p id="profile-bio"></p>
   <p id="profile-email"></p>
+ <button id="edit-profile-btn" type="button">Edit Profile</button>
+
+<div id="edit-profile-form" style="display:none;margin-top:20px">
+  <input id="edit-display-name" type="text"
+    placeholder="Display name"
+    style="display:block;width:100%;padding:12px;margin-bottom:10px">
+
+  <textarea id="edit-bio"
+    placeholder="Write your bio"
+    style="display:block;width:100%;padding:12px;margin-bottom:10px"></textarea>
+
+  <button id="save-profile-btn" type="button">Save Changes</button>
+</div>
   <button id="profile-logout" type="button">Log out</button>
   <p id="profile-message"></p>
 </section>
@@ -244,7 +257,49 @@ client.auth.onAuthStateChange(() => {
   setTimeout(loadVyboraProfile, 0);
 });
 loadVyboraProfile();
+document.getElementById("edit-profile-btn").addEventListener("click", function() {
+  document.getElementById("edit-display-name").value =
+    document.getElementById("profile-name").textContent;
 
+  document.getElementById("edit-bio").value =
+    document.getElementById("profile-bio").textContent;
+
+  document.getElementById("edit-profile-form").style.display = "block";
+});
+
+document.getElementById("save-profile-btn").addEventListener("click", async function() {
+  const message = document.getElementById("profile-message");
+  const newName = document.getElementById("edit-display-name").value.trim();
+  const newBio = document.getElementById("edit-bio").value.trim();
+
+  if (!newName) {
+    message.textContent = "Please enter a display name.";
+    return;
+  }
+
+  const { data: { session } } = await client.auth.getSession();
+
+  if (!session) {
+    message.textContent = "Please log in first.";
+    return;
+  }
+
+  message.textContent = "Saving...";
+
+  const { error } = await client.from("profiles")
+    .update({ display_name: newName, bio: newBio })
+    .eq("id", session.user.id);
+
+  if (error) {
+    message.textContent = "Could not save: " + error.message;
+    return;
+  }
+
+  document.getElementById("profile-name").textContent = newName;
+  document.getElementById("profile-bio").textContent = newBio || "Welcome to VYBORA!";
+  document.getElementById("edit-profile-form").style.display = "none";
+  message.textContent = "Profile updated successfully!";
+});
 </script>
 </body>
   </html>
