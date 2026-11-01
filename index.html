@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#11102b">
 <title>VYBORA — One World. Many Connections.</title>
+
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:Arial,sans-serif;background:#f6f5fc;color:#19172e}
@@ -22,7 +23,7 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .card,.panel{background:white;border:1px solid #e9e5f2;border-radius:16px;padding:17px;margin:13px 0}
 .muted{color:#777;font-size:13px}
 input,textarea{width:100%;padding:13px;margin:7px 0;border:1px solid #ddd;border-radius:9px;font:inherit}
-textarea{min-height:95px}
+textarea{min-height:95px;resize:vertical}
 .hidden{display:none!important}
 #vybora-auth{position:fixed;inset:0;background:#11102bee;z-index:999;padding:20px;overflow:auto}
 .auth-box{max-width:400px;margin:45px auto;background:white;padding:22px;border-radius:18px}
@@ -34,90 +35,102 @@ textarea{min-height:95px}
 .media-preview{width:100%;max-height:360px;object-fit:contain;background:#17142b;border-radius:12px;margin:8px 0}
 .file-help{font-size:12px;color:#777;line-height:1.5}
 .caption-label{display:block;margin:15px 0 5px;font-weight:bold;color:#39235d}
+.comment-section{border-top:1px solid #eee;margin-top:15px;padding-top:12px}
+.comment{background:#f7f5fb;border-radius:10px;padding:11px;margin:9px 0}
+.comment-author{font-weight:bold;font-size:13px}
+.comment-text{white-space:pre-wrap;overflow-wrap:anywhere;margin:7px 0}
+.comment-date{font-size:11px;color:#888}
+.comment-reply{margin-left:20px;border-left:3px solid #d8bdff}
+.comment-actions button{padding:7px 10px;font-size:12px;background:#eee8f7;color:#39235d}
+.reply-box{margin:8px 0 8px 18px}
+footer{text-align:center;color:#777;font-size:12px;padding:20px}
 nav{display:flex;justify-content:space-around;background:white;padding:12px 4px;position:sticky;bottom:0;border-top:1px solid #e8e4ef}
 nav button{background:transparent;color:#554477}
-footer{text-align:center;color:#777;font-size:12px;padding:20px}
 </style>
 </head>
+
 <body>
+
 <header>
   <div class="logo">VYBORA</div>
   <span>ONE WORLD. MANY CONNECTIONS.</span>
 </header>
 
 <main>
-  <section class="hero">
-    <h1>Your world.<br>Your people.</h1>
-    <p>Discover people, share your moments and connect with the world.</p>
-    <button class="primary" id="join-btn">Join VYBORA</button>
-    <button class="secondary" id="login-btn">Log in</button>
-  </section>
 
-  <section class="panel">
-    <h2>Welcome to VYBORA 🌍</h2>
-    <p class="muted">A place for people, ideas, communities and meaningful connections.</p>
-    <p id="account-status">You are browsing VYBORA.</p>
-  </section>
+<section class="hero">
+  <h1>Your world.<br>Your people.</h1>
+  <p>Discover people, share your moments and connect with the world.</p>
+  <button class="primary" id="join-btn">Join VYBORA</button>
+  <button class="secondary" id="login-btn">Log in</button>
+</section>
 
-  <section id="vybora-profile" class="panel hidden">
-    <h2>My Profile</h2>
-    <img id="profile-avatar" alt="Profile picture">
-    <p><strong id="profile-name"></strong></p>
-    <p id="profile-username" class="muted"></p>
-    <p id="profile-bio"></p>
-    <p id="profile-email" class="muted"></p>
-    <h3>Edit profile</h3>
-    <input id="edit-display-name" placeholder="Display name">
-    <textarea id="edit-bio" placeholder="Your bio"></textarea>
-    <button id="save-profile-btn" class="primary">Save profile</button>
-    <h3>Profile picture</h3>
-    <input id="avatar-file" type="file" accept="image/jpeg,image/png,image/webp">
-    <button id="upload-avatar-btn">Upload picture</button>
-    <button id="profile-logout">Log out</button>
-    <p id="profile-message" class="muted"></p>
-  </section>
+<section class="panel">
+  <h2>Welcome to VYBORA 🌍</h2>
+  <p class="muted">A place for people, ideas, communities and meaningful connections.</p>
+  <p id="account-status">You are browsing VYBORA.</p>
+</section>
 
-  <section id="vybora-posts" class="panel">
-    <h2>VYBORA Feed</h2>
+<section id="vybora-profile" class="panel hidden">
+  <h2>My Profile</h2>
+  <img id="profile-avatar" alt="Profile picture">
+  <p><strong id="profile-name"></strong></p>
+  <p id="profile-username" class="muted"></p>
+  <p id="profile-bio"></p>
+  <p id="profile-email" class="muted"></p>
 
-    <label for="post-content" class="caption-label">
-      Write a caption for your photo or video
-    </label>
-    <textarea
-      id="post-content"
-      placeholder="What's happening in your world? Write your caption here..."
-    ></textarea>
+  <h3>Edit profile</h3>
+  <input id="edit-display-name" placeholder="Display name">
+  <textarea id="edit-bio" placeholder="Your bio"></textarea>
+  <button id="save-profile-btn" class="primary">Save profile</button>
 
-    <label for="post-media-file" class="caption-label">
-      Choose a photo or video (optional)
-    </label>
-    <input id="post-media-file" type="file"
-      accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime">
+  <h3>Profile picture</h3>
+  <input id="avatar-file" type="file" accept="image/jpeg,image/png,image/webp">
+  <button id="upload-avatar-btn">Upload picture</button>
+  <button id="profile-logout">Log out</button>
+  <p id="profile-message" class="muted"></p>
+</section>
 
-    <p class="file-help">
-      Images: JPG, PNG, WEBP or GIF.<br>
-      Videos: MP4, WEBM or MOV.<br>
-      Maximum file size: 50 MB.
-    </p>
+<section id="vybora-posts" class="panel">
+  <h2>VYBORA Feed</h2>
 
-    <div id="media-preview-wrap" class="hidden">
-      <img id="media-image-preview" class="media-preview hidden" alt="Selected media preview">
-      <video id="media-video-preview" class="media-preview hidden" controls playsinline></video>
-      <button type="button" id="clear-media-btn">Remove selected media</button>
-    </div>
+  <label for="post-content" class="caption-label">
+    Write a caption for your photo or video
+  </label>
+  <textarea id="post-content"
+    placeholder="What's happening in your world? Write your caption here..."></textarea>
 
-    <button id="publish-post-btn" class="primary">Publish Post</button>
-    <p id="post-message" class="muted"></p>
-    <div id="posts-list">Loading posts...</div>
-  </section>
+  <label for="post-media-file" class="caption-label">
+    Choose a photo or video (optional)
+  </label>
+  <input id="post-media-file" type="file"
+    accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime">
 
-  <section class="panel">
-    <h2>Explore VYBORA</h2>
-    <p>🌍 Discover people</p>
-    <p>💬 Connect and chat</p>
-    <p>✨ Share your moments</p>
-    <p>◎ Communities and groups</p>
-  </section>
+  <p class="file-help">
+    Images: JPG, PNG, WEBP or GIF.<br>
+    Videos: MP4, WEBM or MOV.<br>
+    Maximum file size: 50 MB.
+  </p>
+
+  <div id="media-preview-wrap" class="hidden">
+    <img id="media-image-preview" class="media-preview hidden" alt="Selected media preview">
+    <video id="media-video-preview" class="media-preview hidden" controls playsinline></video>
+    <button type="button" id="clear-media-btn">Remove selected media</button>
+  </div>
+
+  <button id="publish-post-btn" class="primary">Publish Post</button>
+  <p id="post-message" class="muted"></p>
+  <div id="posts-list">Loading posts...</div>
+</section>
+
+<section class="panel">
+  <h2>Explore VYBORA</h2>
+  <p>🌍 Discover people</p>
+  <p>💬 Connect and chat</p>
+  <p>✨ Share your moments</p>
+  <p>◎ Communities and groups</p>
+</section>
+
 </main>
 
 <nav>
@@ -135,7 +148,8 @@ footer{text-align:center;color:#777;font-size:12px;padding:20px}
       <input id="auth-name" placeholder="Your display name" required>
       <input id="auth-username" placeholder="Choose a username" required>
       <input id="auth-email" type="email" placeholder="Email address" required>
-      <input id="auth-password" type="password" placeholder="Password (at least 8 characters)" minlength="8" required>
+      <input id="auth-password" type="password"
+        placeholder="Password (at least 8 characters)" minlength="8" required>
       <button class="primary" type="submit">Continue</button>
     </form>
     <p id="auth-message" class="muted"></p>
@@ -145,15 +159,23 @@ footer{text-align:center;color:#777;font-size:12px;padding:20px}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <script>
 const VYBORA_URL = "https://vvtsarowbbnomyurgsrw.supabase.co";
 const VYBORA_KEY = "sb_publishable_6dcKDgn1JzycYRAZn_darQ_dFkyAaZk";
+
 const client = supabase.createClient(VYBORA_URL, VYBORA_KEY);
 
 const MEDIA_BUCKET = "post-media";
 const MAX_MEDIA_BYTES = 50 * 1024 * 1024;
-const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-const VIDEO_TYPES = ["video/mp4", "video/webm", "video/quicktime"];
+
+const IMAGE_TYPES = [
+  "image/jpeg","image/png","image/webp","image/gif"
+];
+
+const VIDEO_TYPES = [
+  "video/mp4","video/webm","video/quicktime"
+];
 
 let authMode = "signup";
 let currentUser = null;
@@ -164,26 +186,40 @@ const el = id => document.getElementById(id);
 function openAuth(mode) {
   authMode = mode;
   el("vybora-auth").classList.remove("hidden");
-  el("auth-title").textContent = mode === "signup" ? "Join VYBORA" : "Welcome back";
+  el("auth-title").textContent =
+    mode === "signup" ? "Join VYBORA" : "Welcome back";
+
   el("auth-name").classList.toggle("hidden", mode !== "signup");
   el("auth-username").classList.toggle("hidden", mode !== "signup");
+
   el("auth-name").required = mode === "signup";
   el("auth-username").required = mode === "signup";
-  el("auth-switch").textContent = mode === "signup"
-    ? "Already have an account? Log in"
-    : "Need an account? Sign up";
+
+  el("auth-switch").textContent =
+    mode === "signup"
+      ? "Already have an account? Log in"
+      : "Need an account? Sign up";
+
   el("auth-message").textContent = "";
 }
 
 el("join-btn").addEventListener("click", () => openAuth("signup"));
 el("login-btn").addEventListener("click", () => openAuth("login"));
-el("auth-close").addEventListener("click", () => el("vybora-auth").classList.add("hidden"));
-el("auth-switch").addEventListener("click", () => openAuth(authMode === "signup" ? "login" : "signup"));
+
+el("auth-close").addEventListener("click", () => {
+  el("vybora-auth").classList.add("hidden");
+});
+
+el("auth-switch").addEventListener("click", () => {
+  openAuth(authMode === "signup" ? "login" : "signup");
+});
 
 el("auth-form").addEventListener("submit", async event => {
   event.preventDefault();
+
   const message = el("auth-message");
   message.textContent = "Please wait...";
+
   const email = el("auth-email").value.trim();
   const password = el("auth-password").value;
 
@@ -196,10 +232,15 @@ el("auth-form").addEventListener("submit", async event => {
         throw new Error("Username must contain 3–20 letters, numbers or underscores.");
       }
 
-      const {data, error} = await client.auth.signUp({
+      const {data,error} = await client.auth.signUp({
         email,
         password,
-        options: {data: {display_name: name, username}}
+        options: {
+          data: {
+            display_name: name,
+            username
+          }
+        }
       });
 
       if (error) throw error;
@@ -207,20 +248,27 @@ el("auth-form").addEventListener("submit", async event => {
       message.textContent = data.session
         ? "Your account is ready!"
         : "Check your email to confirm your account, then log in.";
+
     } else {
-      const {error} = await client.auth.signInWithPassword({email, password});
+      const {error} = await client.auth.signInWithPassword({
+        email,
+        password
+      });
+
       if (error) throw error;
 
-      message.textContent = "Welcome back!";
       el("vybora-auth").classList.add("hidden");
+      message.textContent = "Welcome back!";
     }
+
   } catch (error) {
     message.textContent = error.message;
   }
 });
 
 async function loadVyboraProfile() {
-  const {data: {session}} = await client.auth.getSession();
+  const {data:{session}} = await client.auth.getSession();
+
   currentUser = session?.user || null;
 
   el("account-status").textContent = currentUser
@@ -232,16 +280,16 @@ async function loadVyboraProfile() {
     return;
   }
 
-  const {data: profile, error: profileError} = await client
+  const {data:profile,error} = await client
     .from("profiles")
     .select("username,display_name,bio,avatar_url")
-    .eq("id", currentUser.id)
+    .eq("id",currentUser.id)
     .single();
 
   el("vybora-profile").classList.remove("hidden");
 
-  if (profileError) {
-    el("profile-message").textContent = "Profile error: " + profileError.message;
+  if (error) {
+    el("profile-message").textContent = error.message;
     return;
   }
 
@@ -249,6 +297,7 @@ async function loadVyboraProfile() {
   el("profile-username").textContent = "@" + (profile.username || "");
   el("profile-bio").textContent = profile.bio || "Welcome to VYBORA!";
   el("profile-email").textContent = currentUser.email || "";
+
   el("edit-display-name").value = profile.display_name || "";
   el("edit-bio").value = profile.bio || "";
 
@@ -273,8 +322,8 @@ el("save-profile-btn").addEventListener("click", async () => {
   el("profile-message").textContent = "Saving...";
 
   const {error} = await client.from("profiles")
-    .update({display_name: name, bio})
-    .eq("id", currentUser.id);
+    .update({display_name:name,bio})
+    .eq("id",currentUser.id);
 
   if (error) {
     el("profile-message").textContent = error.message;
@@ -298,7 +347,8 @@ el("upload-avatar-btn").addEventListener("click", async () => {
 
   if (!["image/jpeg","image/png","image/webp"].includes(file.type) ||
       file.size > 5 * 1024 * 1024) {
-    el("profile-message").textContent = "Choose a JPG, PNG or WEBP image under 5 MB.";
+    el("profile-message").textContent =
+      "Choose a JPG, PNG or WEBP image under 5 MB.";
     return;
   }
 
@@ -307,8 +357,9 @@ el("upload-avatar-btn").addEventListener("click", async () => {
   const ext = file.name.split(".").pop().toLowerCase();
   const path = `${currentUser.id}/avatar-${Date.now()}.${ext}`;
 
-  const {error: uploadError} = await client.storage.from("avatars")
-    .upload(path, file, {contentType: file.type});
+  const {error:uploadError} = await client.storage
+    .from("avatars")
+    .upload(path,file,{contentType:file.type});
 
   if (uploadError) {
     el("profile-message").textContent = uploadError.message;
@@ -318,8 +369,8 @@ el("upload-avatar-btn").addEventListener("click", async () => {
   const {data} = client.storage.from("avatars").getPublicUrl(path);
 
   const {error} = await client.from("profiles")
-    .update({avatar_url: data.publicUrl})
-    .eq("id", currentUser.id);
+    .update({avatar_url:data.publicUrl})
+    .eq("id",currentUser.id);
 
   if (error) {
     el("profile-message").textContent = error.message;
@@ -343,14 +394,19 @@ el("profile-logout").addEventListener("click", async () => {
 });
 
 function clearMediaSelection() {
-  if (previewObjectUrl) URL.revokeObjectURL(previewObjectUrl);
+  if (previewObjectUrl) {
+    URL.revokeObjectURL(previewObjectUrl);
+  }
+
   previewObjectUrl = null;
 
   el("post-media-file").value = "";
   el("media-preview-wrap").classList.add("hidden");
   el("media-image-preview").classList.add("hidden");
   el("media-video-preview").classList.add("hidden");
+
   el("media-image-preview").removeAttribute("src");
+
   el("media-video-preview").pause();
   el("media-video-preview").removeAttribute("src");
   el("media-video-preview").load();
@@ -361,14 +417,14 @@ el("post-media-file").addEventListener("change", () => {
 
   if (!file) return;
 
-  if (![...IMAGE_TYPES, ...VIDEO_TYPES].includes(file.type)) {
+  if (![...IMAGE_TYPES,...VIDEO_TYPES].includes(file.type)) {
     el("post-message").textContent = "Choose a supported image or video file.";
     clearMediaSelection();
     return;
   }
 
   if (file.size > MAX_MEDIA_BYTES) {
-    el("post-message").textContent = "This file is larger than 50 MB. Choose a smaller file.";
+    el("post-message").textContent = "This file is larger than 50 MB.";
     clearMediaSelection();
     return;
   }
@@ -376,6 +432,7 @@ el("post-media-file").addEventListener("change", () => {
   if (previewObjectUrl) URL.revokeObjectURL(previewObjectUrl);
 
   previewObjectUrl = URL.createObjectURL(file);
+
   el("media-preview-wrap").classList.remove("hidden");
 
   if (IMAGE_TYPES.includes(file.type)) {
@@ -391,50 +448,249 @@ el("post-media-file").addEventListener("change", () => {
   el("post-message").textContent = "";
 });
 
-el("clear-media-btn").addEventListener("click", clearMediaSelection);
+el("clear-media-btn").addEventListener("click",clearMediaSelection);
 
 function safeFileName(name) {
   return name.toLowerCase()
-    .replace(/[^a-z0-9._-]+/g, "-")
+    .replace(/[^a-z0-9._-]+/g,"-")
     .slice(-80) || "upload";
 }
+
+/* COMMENTS AND REPLIES */
+
+async function loadComments(postId,container) {
+  container.textContent = "Loading comments...";
+
+  const {data:comments,error} = await client
+    .from("comments")
+    .select("id,post_id,user_id,parent_id,content,created_at")
+    .eq("post_id",postId)
+    .order("created_at",{ascending:true});
+
+  if (error) {
+    container.textContent = "Could not load comments: " + error.message;
+    return;
+  }
+
+  container.replaceChildren();
+
+  if (!comments.length) {
+    const empty = document.createElement("p");
+    empty.className = "muted";
+    empty.textContent = "No comments yet. Start the conversation!";
+    container.append(empty);
+  }
+
+  const userIds = [...new Set(comments.map(c => c.user_id))];
+
+  let profiles = [];
+
+  if (userIds.length) {
+    const result = await client.from("profiles")
+      .select("id,username,display_name,avatar_url")
+      .in("id",userIds);
+
+    if (!result.error) profiles = result.data || [];
+  }
+
+  const profileMap = new Map(profiles.map(p => [p.id,p]));
+
+  const topLevel = comments.filter(c => !c.parent_id);
+
+  topLevel.forEach(comment => {
+    const profile = profileMap.get(comment.user_id);
+    const box = document.createElement("div");
+    box.className = "comment";
+
+    const author = document.createElement("div");
+    author.className = "comment-author";
+    author.textContent =
+      (profile?.display_name || profile?.username || "VYBORA Member") +
+      (profile?.username ? " @" + profile.username : "");
+
+    const text = document.createElement("p");
+    text.className = "comment-text";
+    text.textContent = comment.content;
+
+    const date = document.createElement("div");
+    date.className = "comment-date";
+    date.textContent = new Date(comment.created_at).toLocaleString();
+
+    box.append(author,text,date);
+
+    if (currentUser && currentUser.id === comment.user_id) {
+      const remove = document.createElement("button");
+      remove.textContent = "Delete";
+      remove.type = "button";
+
+      remove.addEventListener("click",async () => {
+        if (!confirm("Delete this comment and its replies?")) return;
+
+        const {error} = await client.from("comments")
+          .delete()
+          .eq("id",comment.id)
+          .eq("user_id",currentUser.id);
+
+        if (error) {
+          alert(error.message);
+        } else {
+          await loadComments(postId,container);
+        }
+      });
+
+      box.append(remove);
+    }
+
+    const replyButton = document.createElement("button");
+    replyButton.type = "button";
+    replyButton.textContent = "Reply";
+
+    const replyArea = document.createElement("div");
+    replyArea.className = "reply-box hidden";
+
+    const replyInput = document.createElement("textarea");
+    replyInput.placeholder = "Write a reply...";
+
+    const sendReply = document.createElement("button");
+    sendReply.type = "button";
+    sendReply.textContent = "Send reply";
+    sendReply.className = "primary";
+
+    replyButton.addEventListener("click",() => {
+      if (!currentUser) {
+        alert("Log in to reply.");
+        return;
+      }
+
+      replyArea.classList.toggle("hidden");
+    });
+
+    sendReply.addEventListener("click",async () => {
+      if (!currentUser) return;
+
+      const reply = replyInput.value.trim();
+
+      if (!reply) {
+        alert("Write a reply first.");
+        return;
+      }
+
+      sendReply.disabled = true;
+
+      const {error} = await client.from("comments").insert({
+        post_id:postId,
+        user_id:currentUser.id,
+        parent_id:comment.id,
+        content:reply
+      });
+
+      sendReply.disabled = false;
+
+      if (error) {
+        alert("Reply failed: " + error.message);
+      } else {
+        await loadComments(postId,container);
+      }
+    });
+
+    replyArea.append(replyInput,sendReply);
+    box.append(replyButton,replyArea);
+
+    const replies = comments.filter(c => c.parent_id === comment.id);
+
+    replies.forEach(reply => {
+      const replyProfile = profileMap.get(reply.user_id);
+      const replyBox = document.createElement("div");
+      replyBox.className = "comment comment-reply";
+
+      const replyAuthor = document.createElement("div");
+      replyAuthor.className = "comment-author";
+      replyAuthor.textContent =
+        (replyProfile?.display_name || replyProfile?.username || "VYBORA Member") +
+        (replyProfile?.username ? " @" + replyProfile.username : "");
+
+      const replyText = document.createElement("p");
+      replyText.className = "comment-text";
+      replyText.textContent = reply.content;
+
+      const replyDate = document.createElement("div");
+      replyDate.className = "comment-date";
+      replyDate.textContent = new Date(reply.created_at).toLocaleString();
+
+      replyBox.append(replyAuthor,replyText,replyDate);
+
+      if (currentUser && currentUser.id === reply.user_id) {
+        const deleteReply = document.createElement("button");
+        deleteReply.type = "button";
+        deleteReply.textContent = "Delete";
+
+        deleteReply.addEventListener("click",async () => {
+          if (!confirm("Delete this reply?")) return;
+
+          const {error} = await client.from("comments")
+            .delete()
+            .eq("id",reply.id)
+            .eq("user_id",currentUser.id);
+
+          if (error) {
+            alert(error.message);
+          } else {
+            await loadComments(postId,container);
+          }
+        });
+
+        replyBox.append(deleteReply);
+      }
+
+      box.append(replyBox);
+    });
+
+    container.append(box);
+  });
+
+  const count = document.createElement("p");
+  count.className = "muted";
+  count.textContent = comments.length + " comment(s)";
+  container.prepend(count);
+}
+
+/* FEED */
 
 async function loadVyboraPosts() {
   const list = el("posts-list");
   list.textContent = "Loading posts...";
 
   try {
-    const {data: posts, error} = await client
-      .from("posts")
+    const {data:posts,error} = await client.from("posts")
       .select("id,user_id,content,created_at,media_url,media_type")
-      .order("created_at", {ascending: false});
+      .order("created_at",{ascending:false});
 
     if (error) throw error;
 
     list.replaceChildren();
 
-    if (!posts || posts.length === 0) {
+    if (!posts || !posts.length) {
       list.textContent = "No posts yet. Be the first to share!";
       return;
     }
 
-    const userIds = [...new Set(posts.map(post => post.user_id))];
-    const postIds = posts.map(post => post.id);
+    const userIds = [...new Set(posts.map(p => p.user_id))];
+    const postIds = posts.map(p => p.id);
 
     const profileResult = await client.from("profiles")
       .select("id,username,display_name,avatar_url")
-      .in("id", userIds);
+      .in("id",userIds);
 
     const profiles = profileResult.error ? [] : (profileResult.data || []);
+    const profileMap = new Map(profiles.map(p => [p.id,p]));
 
     const likesResult = await client.from("likes")
       .select("post_id,user_id")
-      .in("post_id", postIds);
+      .in("post_id",postIds);
 
     const likes = likesResult.error ? [] : (likesResult.data || []);
-    const profileMap = new Map(profiles.map(p => [p.id, p]));
 
-    posts.forEach(post => {
+    for (const post of posts) {
       const profile = profileMap.get(post.user_id);
       const card = document.createElement("article");
       card.className = "card";
@@ -454,57 +710,70 @@ async function loadVyboraPosts() {
 
       const author = document.createElement("strong");
       author.className = "post-author";
-      author.textContent = profile?.display_name || profile?.username || "VYBORA Member";
+      author.textContent =
+        profile?.display_name || profile?.username || "VYBORA Member";
 
       const username = document.createElement("p");
       username.className = "muted";
       username.textContent = profile?.username ? "@" + profile.username : "";
 
-      const content = document.createElement("p");
-      content.className = "post-content";
-      content.textContent = post.content || "";
+      card.append(author,username);
 
-      card.append(author, username);
+      if (post.content && post.content.trim()) {
+        const content = document.createElement("p");
+        content.className = "post-content";
+        content.textContent = post.content;
+        card.append(content);
+      } else if (post.media_type === "image") {
+        const label = document.createElement("p");
+        label.className = "muted";
+        label.textContent = "Shared a photo";
+        card.append(label);
+      } else if (post.media_type === "video") {
+        const label = document.createElement("p");
+        label.className = "muted";
+        label.textContent = "Shared a video";
+        card.append(label);
+      }
 
-      if (post.content) card.append(content);
+      if (post.media_url && post.media_type === "image") {
+        const image = document.createElement("img");
+        image.className = "post-media";
+        image.src = post.media_url;
+        image.alt = "Post image";
+        image.loading = "lazy";
+        card.append(image);
+      }
 
-      if (post.media_url && post.media_type) {
-        if (post.media_type === "image") {
-          const image = document.createElement("img");
-          image.className = "post-media";
-          image.src = post.media_url;
-          image.alt = "Post image";
-          image.loading = "lazy";
-          card.append(image);
-        } else if (post.media_type === "video") {
-          const video = document.createElement("video");
-          video.className = "post-media";
-          video.src = post.media_url;
-          video.controls = true;
-          video.playsInline = true;
-          video.preload = "metadata";
-          card.append(video);
-        }
+      if (post.media_url && post.media_type === "video") {
+        const video = document.createElement("video");
+        video.className = "post-media";
+        video.src = post.media_url;
+        video.controls = true;
+        video.playsInline = true;
+        video.preload = "metadata";
+        card.append(video);
       }
 
       const date = document.createElement("p");
       date.className = "post-date";
       date.textContent = new Date(post.created_at).toLocaleString();
 
-      const postLikes = likes.filter(like => like.post_id === post.id);
-      let liked = postLikes.some(like => like.user_id === currentUser?.id);
+      const postLikes = likes.filter(l => l.post_id === post.id);
+      let liked = postLikes.some(l => l.user_id === currentUser?.id);
       let count = postLikes.length;
 
       const likeButton = document.createElement("button");
       likeButton.type = "button";
 
       function refreshLike() {
-        likeButton.textContent = (liked ? "♥ Liked" : "♡ Like") + " (" + count + ")";
+        likeButton.textContent =
+          (liked ? "♥ Liked" : "♡ Like") + " (" + count + ")";
       }
 
       refreshLike();
 
-      likeButton.addEventListener("click", async () => {
+      likeButton.addEventListener("click",async () => {
         if (!currentUser) {
           alert("Log in to like posts.");
           return;
@@ -514,22 +783,25 @@ async function loadVyboraPosts() {
 
         if (liked) {
           const {error} = await client.from("likes").delete()
-            .eq("post_id", post.id)
-            .eq("user_id", currentUser.id);
+            .eq("post_id",post.id)
+            .eq("user_id",currentUser.id);
 
-          if (error) alert(error.message);
-          else {
+          if (error) {
+            alert(error.message);
+          } else {
             liked = false;
-            count = Math.max(0, count - 1);
+            count = Math.max(0,count - 1);
           }
+
         } else {
           const {error} = await client.from("likes").insert({
-            post_id: post.id,
-            user_id: currentUser.id
+            post_id:post.id,
+            user_id:currentUser.id
           });
 
-          if (error) alert(error.message);
-          else {
+          if (error) {
+            alert(error.message);
+          } else {
             liked = true;
             count++;
           }
@@ -539,9 +811,76 @@ async function loadVyboraPosts() {
         likeButton.disabled = false;
       });
 
-      card.append(date, likeButton);
+      card.append(date,likeButton);
+
+      /* Comment interface */
+
+      const commentSection = document.createElement("div");
+      commentSection.className = "comment-section";
+
+      const commentHeading = document.createElement("strong");
+      commentHeading.textContent = "Comments";
+
+      const commentInput = document.createElement("textarea");
+      commentInput.placeholder = "Write a comment...";
+
+      const commentButton = document.createElement("button");
+      commentButton.type = "button";
+      commentButton.textContent = "Post comment";
+      commentButton.className = "primary";
+
+      const commentMessage = document.createElement("p");
+      commentMessage.className = "muted";
+
+      const commentsList = document.createElement("div");
+
+      commentButton.addEventListener("click",async () => {
+        if (!currentUser) {
+          alert("Log in to comment.");
+          return;
+        }
+
+        const text = commentInput.value.trim();
+
+        if (!text) {
+          commentMessage.textContent = "Write a comment first.";
+          return;
+        }
+
+        commentButton.disabled = true;
+        commentMessage.textContent = "Posting comment...";
+
+        const {error} = await client.from("comments").insert({
+          post_id:post.id,
+          user_id:currentUser.id,
+          parent_id:null,
+          content:text
+        });
+
+        commentButton.disabled = false;
+
+        if (error) {
+          commentMessage.textContent = "Comment failed: " + error.message;
+        } else {
+          commentInput.value = "";
+          commentMessage.textContent = "Comment posted!";
+          await loadComments(post.id,commentsList);
+        }
+      });
+
+      commentSection.append(
+        commentHeading,
+        commentInput,
+        commentButton,
+        commentMessage,
+        commentsList
+      );
+
+      card.append(commentSection);
       list.appendChild(card);
-    });
+
+      await loadComments(post.id,commentsList);
+    }
 
     if (likesResult.error) {
       const warning = document.createElement("p");
@@ -551,12 +890,13 @@ async function loadVyboraPosts() {
     }
 
   } catch (error) {
-    list.textContent = "Feed error: " + error.message +
-      ". If this mentions media_url or media_type, check that the media columns were added.";
+    list.textContent = "Feed error: " + error.message;
   }
 }
 
-el("publish-post-btn").addEventListener("click", async () => {
+/* PUBLISH POSTS */
+
+el("publish-post-btn").addEventListener("click",async () => {
   const caption = el("post-content").value.trim();
   const file = el("post-media-file").files[0];
   const message = el("post-message");
@@ -572,7 +912,7 @@ el("publish-post-btn").addEventListener("click", async () => {
     return;
   }
 
-  if (file && (![...IMAGE_TYPES, ...VIDEO_TYPES].includes(file.type) ||
+  if (file && (![...IMAGE_TYPES,...VIDEO_TYPES].includes(file.type) ||
       file.size > MAX_MEDIA_BYTES)) {
     message.textContent = "Choose a supported photo/video file under 50 MB.";
     return;
@@ -589,30 +929,37 @@ el("publish-post-btn").addEventListener("click", async () => {
 
     if (file) {
       mediaType = IMAGE_TYPES.includes(file.type) ? "image" : "video";
-      const path = `${currentUser.id}/${Date.now()}-${safeFileName(file.name)}`;
-      uploadedPath = path;
 
-      const {error: uploadError} = await client.storage.from(MEDIA_BUCKET)
-        .upload(path, file, {contentType: file.type, upsert: false});
+      uploadedPath =
+        `${currentUser.id}/${Date.now()}-${safeFileName(file.name)}`;
+
+      const {error:uploadError} = await client.storage
+        .from(MEDIA_BUCKET)
+        .upload(uploadedPath,file,{
+          contentType:file.type,
+          upsert:false
+        });
 
       if (uploadError) throw uploadError;
 
-      mediaUrl = client.storage.from(MEDIA_BUCKET).getPublicUrl(path).data.publicUrl;
+      mediaUrl = client.storage.from(MEDIA_BUCKET)
+        .getPublicUrl(uploadedPath).data.publicUrl;
     }
 
     message.textContent = "Saving your post...";
 
-    const {error: postError} = await client.from("posts").insert({
-      user_id: currentUser.id,
-      content: caption,
-      media_url: mediaUrl,
-      media_type: mediaType
+    const {error:postError} = await client.from("posts").insert({
+      user_id:currentUser.id,
+      content:caption,
+      media_url:mediaUrl,
+      media_type:mediaType
     });
 
     if (postError) throw postError;
 
     el("post-content").value = "";
     clearMediaSelection();
+
     message.textContent = "Post published!";
 
     await loadVyboraPosts();
@@ -633,11 +980,12 @@ client.auth.onAuthStateChange(() => {
   setTimeout(async () => {
     await loadVyboraProfile();
     await loadVyboraPosts();
-  }, 0);
+  },0);
 });
 
 loadVyboraProfile();
 loadVyboraPosts();
 </script>
+
 </body>
 </html>
