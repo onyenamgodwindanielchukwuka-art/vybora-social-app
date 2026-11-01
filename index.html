@@ -243,7 +243,7 @@ let currentUser = null;
 let previewObjectUrl = null;
 let discoveredProfiles = [];
 let discoverLoading = false;
-
+let feedLoading = false;
 const el = id => document.getElementById(id);
 
 function openAuth(mode) {
@@ -1432,6 +1432,9 @@ async function loadComments(postId,container) {
 /* FEED */
 
 async function loadVyboraPosts() {
+  if (feedLoading) return;
+  feedLoading = true;
+
   const list = el("posts-list");
   list.textContent = "Loading posts...";
 
@@ -1667,8 +1670,10 @@ async function loadVyboraPosts() {
       list.prepend(warning);
     }
 
-  } catch (error) {
+    } catch (error) {
     list.textContent = "Feed error: " + error.message;
+  } finally {
+    feedLoading = false;
   }
 }
 
