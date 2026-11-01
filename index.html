@@ -43,8 +43,16 @@ textarea{min-height:95px;resize:vertical}
 .comment-reply{margin-left:20px;border-left:3px solid #d8bdff}
 .comment-actions button{padding:7px 10px;font-size:12px;background:#eee8f7;color:#39235d}
 .reply-box{margin:8px 0 8px 18px}
+.person-card{display:flex;align-items:center;gap:12px;background:#f8f6fc;border:1px solid #eee9f5;border-radius:12px;padding:12px;margin:10px 0}
+.person-avatar{width:52px;height:52px;min-width:52px;border-radius:50%;object-fit:cover;background:#eadcf5}
+.person-info{flex:1;min-width:0}
+.person-info strong{display:block;overflow-wrap:anywhere}
+.person-info p{margin:4px 0;font-size:12px;color:#777}
+.person-counts{font-size:11px;color:#777;margin-top:5px}
+.follow-button{background:#39235d;color:white;white-space:nowrap}
+.follow-button.following{background:#e9e3f2;color:#39235d}
 footer{text-align:center;color:#777;font-size:12px;padding:20px}
-nav{display:flex;justify-content:space-around;background:white;padding:12px 4px;position:sticky;bottom:0;border-top:1px solid #e8e4ef}
+nav{display:flex;justify-content:space-around;background:white;padding:12px 4px;position:sticky;bottom:0;border-top:1px solid #e8e4ef;z-index:10}
 nav button{background:transparent;color:#554477}
 </style>
 </head>
@@ -89,6 +97,23 @@ nav button{background:transparent;color:#554477}
   <button id="upload-avatar-btn">Upload picture</button>
   <button id="profile-logout">Log out</button>
   <p id="profile-message" class="muted"></p>
+</section>
+
+<!-- DISCOVER PEOPLE -->
+
+<section id="vybora-discover" class="panel">
+  <h2>🌍 Discover People</h2>
+  <p class="muted">Find people, explore profiles and make new connections.</p>
+
+  <input
+    id="people-search"
+    type="search"
+    placeholder="Search by name or username..."
+    autocomplete="off"
+  >
+
+  <p id="discover-message" class="muted">Loading members...</p>
+  <div id="people-list"></div>
 </section>
 
 <section id="vybora-posts" class="panel">
@@ -136,6 +161,7 @@ nav button{background:transparent;color:#554477}
 <nav>
   <button onclick="window.scrollTo(0,0)">⌂ Home</button>
   <button onclick="document.getElementById('vybora-posts').scrollIntoView()">⌕ Feed</button>
+  <button onclick="document.getElementById('vybora-discover').scrollIntoView()">🌍 Discover</button>
   <button onclick="document.getElementById('vybora-profile').scrollIntoView()">♙ Profile</button>
 </nav>
 
@@ -180,6 +206,8 @@ const VIDEO_TYPES = [
 let authMode = "signup";
 let currentUser = null;
 let previewObjectUrl = null;
+let discoveredProfiles = [];
+let discoverLoading = false;
 
 const el = id => document.getElementById(id);
 
@@ -258,7 +286,6 @@ el("auth-form").addEventListener("submit", async event => {
       if (error) throw error;
 
       el("vybora-auth").classList.add("hidden");
-      message.textContent = "Welcome back!";
     }
 
   } catch (error) {
@@ -391,6 +418,7 @@ el("profile-logout").addEventListener("click", async () => {
 
   await loadVyboraProfile();
   await loadVyboraPosts();
+  await loadDiscoverPeople();
 });
 
 function clearMediaSelection() {
@@ -455,6 +483,214 @@ function safeFileName(name) {
     .replace(/[^a-z0-9._-]+/g,"-")
     .slice(-80) || "upload";
 }
+
+/* DISCOVER PEOPLE AND FOLLOW SYSTEM */
+
+async function loadDiscoverPeople() {
+  if (discoverLoading) return;
+  discoverLoading = true;
+
+  const message = el("discover-message");
+  const list = el("people-list");
+
+  message.textContent = "Loading members...";
+  list.replaceChildren();
+
+  try {
+    const {data:profiles,error} = await client
+      .from("profiles")
+      .select("id,username,display_name,bio,avatar_url")
+      .order("created_at",{ascending:false})
+      .limit(100);
+
+    if (error) throw error;
+
+    discoveredProfiles = profiles || [];
+
+    await renderDiscoverPeople();
+
+  } catch (error) {
+    message.textContent = "Could not load members: " + error.message;
+  } finally {
+    discoverLoading = false;
+  }
+}
+
+async function renderDiscoverPeople() {
+  const list = el("people-list");
+  const message = el("discover-message");
+  const search = el("people-search").value.trim().toLowerCase();
+
+  list.replaceChildren();
+
+  const visibleProfiles = discoveredProfiles.filter(profile => {
+    if (currentUser && profile.id === currentUser.id) return false;
+
+    const name = (profile.display_name || "").toLowerCase();
+    const username = (profile.username || "").toLowerCase();
+
+    return name.includes(search) || username.includes(search);
+  });
+
+  if (!visibleProfiles.length) {
+    message.textContent = search
+      ? "No members found. Try another search."
+      : "No other members are available yet.";
+
+    return;
+  }
+
+  message.textContent = visibleProfiles.length + " member(s) found.";
+
+  const profileIds = visibleProfiles.map(p => p.id);
+
+  let followRows = [];
+
+  if (currentUser && profileIds.length) {
+    const {data,error} = await client
+      .from("follows")
+      .select("following_id")
+      .eq("follower_id",currentUser.id)
+      .in("following_id",profileIds);
+
+    if (error) throw error;
+
+    followRows = data || [];
+  }
+
+  const followingSet = new Set(followRows.map(row => row.following_id));
+
+  let counts = [];
+
+  if (profileIds.length) {
+    const {data,error} = await client
+      .from("follows")
+      .select("follower_id,following_id")
+      .limit(1000);
+
+    if (error) throw error;
+
+    counts = data || [];
+  }
+
+  const followerCounts = new Map();
+  const followingCounts = new Map();
+
+  counts.forEach(row => {
+    followerCounts.set(
+      row.following_id,
+      (followerCounts.get(row.following_id) || 0) + 1
+    );
+
+    followingCounts.set(
+      row.follower_id,
+      (followingCounts.get(row.follower_id) || 0) + 1
+    );
+  });
+
+  visibleProfiles.forEach(profile => {
+    const card = document.createElement("div");
+    card.className = "person-card";
+
+    const avatar = document.createElement("img");
+    avatar.className = "person-avatar";
+    avatar.alt = "Member profile picture";
+
+    if (profile.avatar_url) {
+      avatar.src = profile.avatar_url;
+    }
+
+    const info = document.createElement("div");
+    info.className = "person-info";
+
+    const name = document.createElement("strong");
+    name.textContent = profile.display_name || "VYBORA Member";
+
+    const username = document.createElement("p");
+    username.textContent = profile.username
+      ? "@" + profile.username
+      : "VYBORA member";
+
+    const bio = document.createElement("p");
+    bio.textContent = profile.bio || "Welcome to VYBORA!";
+
+    const stats = document.createElement("div");
+    stats.className = "person-counts";
+    stats.textContent =
+      (followerCounts.get(profile.id) || 0) + " followers · " +
+      (followingCounts.get(profile.id) || 0) + " following";
+
+    info.append(name,username,bio,stats);
+
+    card.append(avatar,info);
+
+    if (currentUser) {
+      const button = document.createElement("button");
+      button.type = "button";
+
+      const isFollowing = followingSet.has(profile.id);
+
+      button.textContent = isFollowing ? "Following" : "Follow";
+      button.className = isFollowing
+        ? "follow-button following"
+        : "follow-button";
+
+      button.addEventListener("click",async () => {
+        button.disabled = true;
+
+        try {
+          if (followingSet.has(profile.id)) {
+            const {error} = await client.from("follows")
+              .delete()
+              .eq("follower_id",currentUser.id)
+              .eq("following_id",profile.id);
+
+            if (error) throw error;
+
+            followingSet.delete(profile.id);
+
+          } else {
+            const {error} = await client.from("follows")
+              .insert({
+                follower_id:currentUser.id,
+                following_id:profile.id
+              });
+
+            if (error) throw error;
+
+            followingSet.add(profile.id);
+          }
+
+          await renderDiscoverPeople();
+
+        } catch (error) {
+          alert("Follow update failed: " + error.message);
+          button.disabled = false;
+        }
+      });
+
+      card.append(button);
+
+    } else {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = "Log in to follow";
+      button.className = "follow-button";
+
+      button.addEventListener("click",() => openAuth("login"));
+
+      card.append(button);
+    }
+
+    list.append(card);
+  });
+}
+
+el("people-search").addEventListener("input",() => {
+  renderDiscoverPeople().catch(error => {
+    el("discover-message").textContent = error.message;
+  });
+});
 
 /* COMMENTS AND REPLIES */
 
@@ -813,8 +1049,6 @@ async function loadVyboraPosts() {
 
       card.append(date,likeButton);
 
-      /* Comment interface */
-
       const commentSection = document.createElement("div");
       commentSection.className = "comment-section";
 
@@ -980,11 +1214,17 @@ client.auth.onAuthStateChange(() => {
   setTimeout(async () => {
     await loadVyboraProfile();
     await loadVyboraPosts();
+    await loadDiscoverPeople();
   },0);
 });
 
-loadVyboraProfile();
-loadVyboraPosts();
+async function initializeVybora() {
+  await loadVyboraProfile();
+  await loadVyboraPosts();
+  await loadDiscoverPeople();
+}
+
+initializeVybora();
 </script>
 
 </body>
