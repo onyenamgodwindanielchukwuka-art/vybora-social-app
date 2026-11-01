@@ -51,6 +51,22 @@ textarea{min-height:95px;resize:vertical}
 .person-counts{font-size:11px;color:#777;margin-top:5px}
 .follow-button{background:#39235d;color:white;white-space:nowrap}
 .follow-button.following{background:#e9e3f2;color:#39235d}
+.message-button{background:#39235d;color:white;white-space:nowrap}
+#vybora-messages{scroll-margin-top:15px}
+.messages-layout{display:grid;grid-template-columns:minmax(120px, .8fr) minmax(0,1.5fr);gap:12px;min-height:360px}
+.conversation-list{border:1px solid #eee;border-radius:12px;padding:8px;max-height:520px;overflow:auto}
+.conversation-item{display:block;width:100%;text-align:left;background:#f7f5fb;color:#30234b;margin:4px 0;padding:11px}
+.conversation-item.active{background:#e9defa;outline:2px solid #b99be8}
+.chat-panel{border:1px solid #eee;border-radius:12px;padding:12px;display:flex;flex-direction:column;min-width:0}
+.chat-messages{height:300px;overflow:auto;background:#faf9fc;border-radius:10px;padding:10px;margin:10px 0}
+.chat-bubble{max-width:88%;width:max-content;background:#eee9f7;border-radius:12px;padding:9px 11px;margin:8px 0;overflow-wrap:anywhere;white-space:pre-wrap}
+.chat-bubble.mine{margin-left:auto;background:#e5d7ff}
+.chat-meta{font-size:10px;color:#777;margin-top:5px}
+.chat-actions button{font-size:11px;padding:5px 8px}
+.message-compose{display:flex;gap:7px;align-items:flex-end}
+.message-compose textarea{min-height:48px;max-height:120px;margin:0}
+.message-compose button{margin:0;min-height:48px}
+@media(max-width:560px){.messages-layout{grid-template-columns:1fr}.conversation-list{max-height:170px}.chat-messages{height:280px}}
 footer{text-align:center;color:#777;font-size:12px;padding:20px}
 nav{display:flex;justify-content:space-around;background:white;padding:12px 4px;position:sticky;bottom:0;border-top:1px solid #e8e4ef;z-index:10}
 nav button{background:transparent;color:#554477}
@@ -99,26 +115,17 @@ nav button{background:transparent;color:#554477}
   <p id="profile-message" class="muted"></p>
 </section>
 
-<!-- DISCOVER PEOPLE -->
-
 <section id="vybora-discover" class="panel">
   <h2>🌍 Discover People</h2>
   <p class="muted">Find people, explore profiles and make new connections.</p>
-
-  <input
-    id="people-search"
-    type="search"
-    placeholder="Search by name or username..."
-    autocomplete="off"
-  >
-
+  <input id="people-search" type="search"
+    placeholder="Search by name or username..." autocomplete="off">
   <p id="discover-message" class="muted">Loading members...</p>
   <div id="people-list"></div>
 </section>
 
 <section id="vybora-posts" class="panel">
   <h2>VYBORA Feed</h2>
-
   <label for="post-content" class="caption-label">
     Write a caption for your photo or video
   </label>
@@ -148,7 +155,28 @@ nav button{background:transparent;color:#554477}
   <div id="posts-list">Loading posts...</div>
 </section>
 
-<section class="panel">
+<section id="vybora-messages" class="panel">
+  <h2>💬 Messages</h2>
+  <p class="muted">Private conversations with people on VYBORA.</p>
+  <p id="messages-status" class="muted">Log in to view your messages.</p>
+  <div class="messages-layout">
+    <div id="conversation-list" class="conversation-list">
+      <p class="muted">Your conversations will appear here.</p>
+    </div>
+    <div class="chat-panel">
+      <strong id="chat-title">Choose a conversation</strong>
+      <div id="chat-messages" class="chat-messages">
+        <p class="muted">Select a conversation to read messages.</p>
+      </div>
+      <form id="message-form" class="message-compose">
+        <textarea id="message-input" maxlength="5000"
+          placeholder="Write a message..." disabled></textarea>
+        <button class="primary" id="send-message-btn" type="submit" disabled>Send</button>
+      </form>
+      <p class="muted">Messages are limited to 5,000 characters.</p>
+    </div>
+  </div>
+</section><section class="panel">
   <h2>Explore VYBORA</h2>
   <p>🌍 Discover people</p>
   <p>💬 Connect and chat</p>
@@ -163,6 +191,7 @@ nav button{background:transparent;color:#554477}
   <button onclick="document.getElementById('vybora-posts').scrollIntoView()">⌕ Feed</button>
   <button onclick="document.getElementById('vybora-discover').scrollIntoView()">🌍 Discover</button>
   <button onclick="document.getElementById('vybora-profile').scrollIntoView()">♙ Profile</button>
+  <button onclick="document.getElementById('vybora-messages').scrollIntoView()">💬 Messages</button>
 </nav>
 
 <footer>© 2026 VYBORA · One World. Many Connections.</footer>
@@ -438,9 +467,7 @@ function clearMediaSelection() {
   el("media-video-preview").pause();
   el("media-video-preview").removeAttribute("src");
   el("media-video-preview").load();
-}
-
-el("post-media-file").addEventListener("change", () => {
+}el("post-media-file").addEventListener("change", () => {
   const file = el("post-media-file").files[0];
 
   if (!file) return;
@@ -625,6 +652,15 @@ async function renderDiscoverPeople() {
     card.append(avatar,info);
 
     if (currentUser) {
+      const messageButton = document.createElement("button");
+      messageButton.type = "button";
+      messageButton.className = "message-button";
+      messageButton.textContent = "Message";
+      messageButton.addEventListener("click",() => startDirectConversation(profile));
+      card.append(messageButton);
+    }
+
+    if (currentUser) {
       const button = document.createElement("button");
       button.type = "button";
 
@@ -691,6 +727,253 @@ el("people-search").addEventListener("input",() => {
     el("discover-message").textContent = error.message;
   });
 });
+
+/* VYBORA MESSAGING MVP */
+let activeConversationId = null;
+let messageRealtimeChannel = null;
+let conversationCache = [];
+let messageBusy = false;
+
+function messageErrorText(error) {
+  return error?.message || "Something went wrong. Please try again.";
+}
+
+async function loadConversations() {
+  if (!currentUser) {
+    el("messages-status").textContent = "Log in to view your messages.";
+    el("conversation-list").textContent = "Your conversations will appear here.";
+    el("message-input").disabled = true;
+    el("send-message-btn").disabled = true;
+    return;
+  }
+  el("messages-status").textContent = "Loading conversations...";
+  try {
+    const {data: memberships,error:memberError} = await client
+      .from("conversation_members").select("conversation_id")
+      .eq("user_id",currentUser.id);
+    if (memberError) throw memberError;
+    const ids = (memberships || []).map(x => x.conversation_id);
+    if (!ids.length) {
+      conversationCache = [];
+      renderConversationList();
+      el("messages-status").textContent = "No conversations yet. Find someone to message.";
+      el("chat-title").textContent = "Select a conversation";
+      el("chat-messages").textContent = "Your messages will appear here.";
+      return;
+    }
+    const {data:conversations,error:cError} = await client
+      .from("conversations").select("id,conversation_type,title,creator_id,updated_at")
+      .in("id",ids).order("updated_at",{ascending:false});
+    if (cError) throw cError;
+    const {data:members,error:mError} = await client
+      .from("conversation_members").select("conversation_id,user_id")
+      .in("conversation_id",ids);
+    if (mError) throw mError;
+    const otherIds = [...new Set((members || []).filter(m => m.user_id !== currentUser.id).map(m => m.user_id))];
+    let profiles = [];
+    if (otherIds.length) {
+      const result = await client.from("profiles").select("id,display_name,username")
+        .in("id",otherIds);
+      if (result.error) throw result.error;
+      profiles = result.data || [];
+    }
+    const profileMap = new Map(profiles.map(p => [p.id,p]));
+    conversationCache = (conversations || []).map(c => {
+      const others = (members || []).filter(m => m.conversation_id === c.id && m.user_id !== currentUser.id)
+        .map(m => profileMap.get(m.user_id)).filter(Boolean);
+      const label = c.conversation_type === "group"
+        ? (c.title || "Group conversation")
+        : (others[0]?.display_name || others[0]?.username || "VYBORA member");
+      return {...c,label,others};
+    });
+    renderConversationList();
+    el("messages-status").textContent = conversationCache.length + " conversation(s).";
+    if (activeConversationId && ids.includes(activeConversationId)) {
+      await openConversation(activeConversationId);
+    } else if (conversationCache.length) {
+      await openConversation(conversationCache[0].id);
+    }
+  } catch (error) {
+    el("messages-status").textContent = "Could not load conversations: " + messageErrorText(error);
+  }
+}
+
+function renderConversationList() {
+  const list = el("conversation-list");
+  list.replaceChildren();
+  if (!conversationCache.length) {
+    const p = document.createElement("p"); p.className = "muted";
+    p.textContent = "No conversations yet."; list.append(p); return;
+  }
+  conversationCache.forEach(c => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "conversation-item" + (c.id === activeConversationId ? " active" : "");
+    b.textContent = (c.conversation_type === "group" ? "👥 " : "👤 ") + c.label;
+    b.addEventListener("click",() => openConversation(c.id));
+    list.append(b);
+  });
+}
+
+async function startDirectConversation(profile) {
+  if (!currentUser) { openAuth("login"); return; }
+  try {
+    el("messages-status").textContent = "Opening conversation...";
+    // Reuse an existing direct conversation with exactly this other member.
+    const {data:mine,error:mErr} = await client.from("conversation_members")
+      .select("conversation_id").eq("user_id",currentUser.id);
+    if (mErr) throw mErr;
+    const ids = (mine || []).map(x => x.conversation_id);
+    let existing = null;
+    if (ids.length) {
+      const {data:directs,error:dErr} = await client.from("conversations")
+        .select("id").in("id",ids).eq("conversation_type","direct");
+      if (dErr) throw dErr;
+      const directIds = (directs || []).map(x => x.id);
+      if (directIds.length) {
+        const {data:members,error:memErr} = await client.from("conversation_members")
+          .select("conversation_id,user_id").in("conversation_id",directIds);
+        if (memErr) throw memErr;
+        existing = directIds.find(id => {
+          const group = (members || []).filter(m => m.conversation_id === id);
+          return group.length === 2 && group.some(m => m.user_id === profile.id) &&
+            group.some(m => m.user_id === currentUser.id);
+        });
+      }
+    }
+    if (existing) activeConversationId = existing;
+    else {
+      const {data,error} = await client.rpc("create_conversation",{
+        p_type:"direct",p_title:null,p_member_ids:[profile.id]
+      });
+      if (error) throw error;
+      activeConversationId = data;
+    }
+    await loadConversations();
+    el("vybora-messages").scrollIntoView({behavior:"smooth"});
+  } catch (error) {
+    el("messages-status").textContent = "Could not start chat: " + messageErrorText(error);
+  }
+}
+
+async function openConversation(conversationId) {
+  if (!currentUser) return;
+  activeConversationId = conversationId;
+  renderConversationList();
+  const conversation = conversationCache.find(c => c.id === conversationId);
+  el("chat-title").textContent = conversation?.label || "Conversation";
+  el("chat-messages").textContent = "Loading messages...";
+  el("message-input").disabled = false;
+  el("send-message-btn").disabled = false;
+  if (messageRealtimeChannel) {
+    await client.removeChannel(messageRealtimeChannel);
+    messageRealtimeChannel = null;
+  }
+  try {
+    await fetchMessages();
+    messageRealtimeChannel = client.channel("vybora-chat-" + conversationId)
+      .on("postgres_changes",{event:"*",schema:"public",table:"messages",filter:"conversation_id=eq." + conversationId},() => {
+        if (activeConversationId === conversationId) fetchMessages();
+      }).subscribe();
+  } catch (error) {
+    el("chat-messages").textContent = "Could not load messages: " + messageErrorText(error);
+  }
+}
+
+async function fetchMessages() {
+  const conversationId = activeConversationId;
+  if (!conversationId) return;
+  const {data:rows,error} = await client.from("messages")
+    .select("id,conversation_id,sender_id,content,created_at,edited_at,deleted_at")
+    .eq("conversation_id",conversationId).order("created_at",{ascending:true}).limit(200);
+  if (error) throw error;
+  const senderIds = [...new Set((rows || []).map(m => m.sender_id))];
+  let profiles = [];
+  if (senderIds.length) {
+    const result = await client.from("profiles").select("id,display_name,username")
+      .in("id",senderIds);
+    if (result.error) throw result.error;
+    profiles = result.data || [];
+  }
+  const names = new Map(profiles.map(p => [p.id,p.display_name || p.username || "Member"]));
+  const outgoingIds = (rows || []).filter(m => m.sender_id === currentUser.id).map(m => m.id);
+  let reads = [];
+  if (outgoingIds.length) {
+    const result = await client.from("message_reads").select("message_id,user_id,read_at")
+      .in("message_id",outgoingIds).neq("user_id",currentUser.id);
+    if (!result.error) reads = result.data || [];
+  }
+  const readSet = new Set(reads.map(r => r.message_id));
+  const box = el("chat-messages");
+  box.replaceChildren();
+  (rows || []).forEach(m => {
+    const bubble = document.createElement("div");
+    bubble.className = "chat-bubble" + (m.sender_id === currentUser.id ? " mine" : "");
+    const body = document.createElement("div");
+    body.textContent = m.deleted_at ? "This message was deleted." : m.content;
+    const meta = document.createElement("div"); meta.className = "chat-meta";
+    const date = new Date(m.created_at).toLocaleString();
+    meta.textContent = (m.sender_id === currentUser.id ? "You" : names.get(m.sender_id)) + " · " + date +
+      (m.edited_at ? " · edited" : "") + (m.sender_id === currentUser.id ? (readSet.has(m.id) ? " · Read" : " · Sent") : "");
+    bubble.append(body,meta);
+    if (m.sender_id === currentUser.id && !m.deleted_at) {
+      const actions = document.createElement("div"); actions.className = "chat-actions";
+      const edit = document.createElement("button"); edit.type = "button"; edit.textContent = "Edit";
+      edit.addEventListener("click",() => editMessage(m));
+      const del = document.createElement("button"); del.type = "button"; del.textContent = "Delete";
+      del.addEventListener("click",() => deleteMessage(m.id));
+      actions.append(edit,del); bubble.append(actions);
+    }
+    box.append(bubble);
+  });
+  if (!rows?.length) {
+    const p = document.createElement("p"); p.className = "muted"; p.textContent = "No messages yet. Say hello!"; box.append(p);
+  }
+  box.scrollTop = box.scrollHeight;
+  // Mark incoming messages as read for this signed-in member.
+  const incoming = (rows || []).filter(m => m.sender_id !== currentUser.id && !m.deleted_at);
+  if (incoming.length) {
+    const receipts = incoming.map(m => ({message_id:m.id,user_id:currentUser.id}));
+    const result = await client.from("message_reads").upsert(receipts,{onConflict:"message_id,user_id",ignoreDuplicates:true});
+    if (result.error) console.warn("Read receipt update:",result.error.message);
+  }
+}
+
+el("message-form").addEventListener("submit",async event => {
+  event.preventDefault();
+  if (!currentUser || !activeConversationId || messageBusy) return;
+  const content = el("message-input").value.trim();
+  if (!content) return;
+  messageBusy = true; el("send-message-btn").disabled = true;
+  try {
+    const {error} = await client.from("messages").insert({
+      conversation_id:activeConversationId,sender_id:currentUser.id,content
+    });
+    if (error) throw error;
+    el("message-input").value = "";
+    await fetchMessages();
+    await loadConversations();
+  } catch (error) {
+    el("messages-status").textContent = "Message not sent: " + messageErrorText(error);
+  } finally {
+    messageBusy = false; el("send-message-btn").disabled = !currentUser || !activeConversationId;
+  }
+});async function editMessage(message) {
+  const updated = prompt("Edit your message:",message.content);
+  if (updated === null) return;
+  const content = updated.trim();
+  if (!content || content.length > 5000) { alert("Message must contain 1–5,000 characters."); return; }
+  const {error} = await client.from("messages").update({content,edited_at:new Date().toISOString()})
+    .eq("id",message.id).eq("sender_id",currentUser.id);
+  if (error) alert("Could not edit message: " + error.message);
+  else await fetchMessages();
+}
+
+async function deleteMessage(messageId) {
+  if (!confirm("Delete this message?")) return;
+  const {error} = await client.from("messages").delete().eq("id",messageId).eq("sender_id",currentUser.id);
+  if (error) alert("Could not delete message: " + error.message);
+  else await fetchMessages();
+}
 
 /* COMMENTS AND REPLIES */
 
@@ -953,279 +1236,242 @@ async function loadVyboraPosts() {
       username.className = "muted";
       username.textContent = profile?.username ? "@" + profile.username : "";
 
-      card.append(author,username);
-
-      if (post.content && post.content.trim()) {
-        const content = document.createElement("p");
-        content.className = "post-content";
-        content.textContent = post.content;
-        card.append(content);
-      } else if (post.media_type === "image") {
-        const label = document.createElement("p");
-        label.className = "muted";
-        label.textContent = "Shared a photo";
-        card.append(label);
-      } else if (post.media_type === "video") {
-        const label = document.createElement("p");
-        label.className = "muted";
-        label.textContent = "Shared a video";
-        card.append(label);
-      }
-
-      if (post.media_url && post.media_type === "image") {
-        const image = document.createElement("img");
-        image.className = "post-media";
-        image.src = post.media_url;
-        image.alt = "Post image";
-        image.loading = "lazy";
-        card.append(image);
-      }
-
-      if (post.media_url && post.media_type === "video") {
-        const video = document.createElement("video");
-        video.className = "post-media";
-        video.src = post.media_url;
-        video.controls = true;
-        video.playsInline = true;
-        video.preload = "metadata";
-        card.append(video);
-      }
-
       const date = document.createElement("p");
-      date.className = "post-date";
+      date.className = "muted";
       date.textContent = new Date(post.created_at).toLocaleString();
 
+      const content = document.createElement("p");
+      content.className = "post-content";
+      content.textContent = post.content || "";
+
+      card.append(author,username,date,content);
+
+      if (post.media_url) {
+        if (post.media_type && post.media_type.startsWith("video")) {
+          const video = document.createElement("video");
+          video.src = post.media_url;
+          video.controls = true;
+          video.playsInline = true;
+          video.style.width = "100%";
+          video.style.maxHeight = "420px";
+          card.append(video);
+        } else {
+          const image = document.createElement("img");
+          image.src = post.media_url;
+          image.alt = "Post media";
+          image.style.width = "100%";
+          image.style.maxHeight = "420px";
+          image.style.objectFit = "contain";
+          card.append(image);
+        }
+      }
+
       const postLikes = likes.filter(l => l.post_id === post.id);
-      let liked = postLikes.some(l => l.user_id === currentUser?.id);
-      let count = postLikes.length;
+      const likedByMe = currentUser && postLikes.some(l => l.user_id === currentUser.id);
+
+      const actions = document.createElement("div");
+      actions.className = "post-actions";
 
       const likeButton = document.createElement("button");
       likeButton.type = "button";
-
-      function refreshLike() {
-        likeButton.textContent =
-          (liked ? "♥ Liked" : "♡ Like") + " (" + count + ")";
-      }
-
-      refreshLike();
+      likeButton.textContent = (likedByMe ? "♥ " : "♡ ") + postLikes.length + " Likes";
 
       likeButton.addEventListener("click",async () => {
         if (!currentUser) {
-          alert("Log in to like posts.");
+          openAuth("login");
           return;
         }
 
         likeButton.disabled = true;
 
-        if (liked) {
-          const {error} = await client.from("likes").delete()
-            .eq("post_id",post.id)
-            .eq("user_id",currentUser.id);
+        try {
+          if (postLikes.some(l => l.user_id === currentUser.id)) {
+            const {error} = await client.from("likes")
+              .delete()
+              .eq("post_id",post.id)
+              .eq("user_id",currentUser.id);
 
-          if (error) {
-            alert(error.message);
+            if (error) throw error;
+
           } else {
-            liked = false;
-            count = Math.max(0,count - 1);
+            const {error} = await client.from("likes")
+              .insert({post_id:post.id,user_id:currentUser.id});
+
+            if (error) throw error;
           }
 
-        } else {
-          const {error} = await client.from("likes").insert({
-            post_id:post.id,
-            user_id:currentUser.id
-          });
+          await loadVyboraPosts();
 
-          if (error) {
-            alert(error.message);
-          } else {
-            liked = true;
-            count++;
-          }
+        } catch (error) {
+          alert("Like update failed: " + error.message);
+          likeButton.disabled = false;
         }
-
-        refreshLike();
-        likeButton.disabled = false;
       });
-
-      card.append(date,likeButton);
-
-      const commentSection = document.createElement("div");
-      commentSection.className = "comment-section";
-
-      const commentHeading = document.createElement("strong");
-      commentHeading.textContent = "Comments";
-
-      const commentInput = document.createElement("textarea");
-      commentInput.placeholder = "Write a comment...";
 
       const commentButton = document.createElement("button");
       commentButton.type = "button";
-      commentButton.textContent = "Post comment";
-      commentButton.className = "primary";
+      commentButton.textContent = "Comments";
 
-      const commentMessage = document.createElement("p");
-      commentMessage.className = "muted";
-
-      const commentsList = document.createElement("div");
+      const commentsArea = document.createElement("div");
+      commentsArea.className = "comments-area hidden";
 
       commentButton.addEventListener("click",async () => {
-        if (!currentUser) {
-          alert("Log in to comment.");
-          return;
-        }
+        commentsArea.classList.toggle("hidden");
 
-        const text = commentInput.value.trim();
-
-        if (!text) {
-          commentMessage.textContent = "Write a comment first.";
-          return;
-        }
-
-        commentButton.disabled = true;
-        commentMessage.textContent = "Posting comment...";
-
-        const {error} = await client.from("comments").insert({
-          post_id:post.id,
-          user_id:currentUser.id,
-          parent_id:null,
-          content:text
-        });
-
-        commentButton.disabled = false;
-
-        if (error) {
-          commentMessage.textContent = "Comment failed: " + error.message;
-        } else {
-          commentInput.value = "";
-          commentMessage.textContent = "Comment posted!";
-          await loadComments(post.id,commentsList);
+        if (!commentsArea.classList.contains("hidden")) {
+          await loadComments(post.id,commentsArea);
         }
       });
 
-      commentSection.append(
-        commentHeading,
-        commentInput,
-        commentButton,
-        commentMessage,
-        commentsList
-      );
+      actions.append(likeButton,commentButton);
 
-      card.append(commentSection);
-      list.appendChild(card);
+      if (currentUser && currentUser.id === post.user_id) {
+        const deletePost = document.createElement("button");
+        deletePost.type = "button";
+        deletePost.textContent = "Delete post";
 
-      await loadComments(post.id,commentsList);
-    }
+        deletePost.addEventListener("click",async () => {
+          if (!confirm("Delete this post?")) return;
 
-    if (likesResult.error) {
-      const warning = document.createElement("p");
-      warning.className = "muted";
-      warning.textContent = "Likes could not be loaded: " + likesResult.error.message;
-      list.prepend(warning);
+          const {error} = await client.from("posts")
+            .delete()
+            .eq("id",post.id)
+            .eq("user_id",currentUser.id);
+
+          if (error) {
+            alert("Could not delete post: " + error.message);
+          } else {
+            await loadVyboraPosts();
+          }
+        });
+
+        actions.append(deletePost);
+      }
+
+      card.append(actions,commentsArea);
+      list.append(card);
     }
 
   } catch (error) {
-    list.textContent = "Feed error: " + error.message;
+    list.textContent = "Could not load posts: " + error.message;
   }
 }
 
-/* PUBLISH POSTS */
+/* CREATE POSTS */
 
-el("publish-post-btn").addEventListener("click",async () => {
-  const caption = el("post-content").value.trim();
-  const file = el("post-media-file").files[0];
-  const message = el("post-message");
-  const button = el("publish-post-btn");
-
-  if (!caption && !file) {
-    message.textContent = "Write a caption or choose a photo/video first.";
-    return;
-  }
+el("post-form").addEventListener("submit",async event => {
+  event.preventDefault();
 
   if (!currentUser) {
-    message.textContent = "Log in before publishing.";
+    openAuth("login");
     return;
   }
 
-  if (file && (![...IMAGE_TYPES,...VIDEO_TYPES].includes(file.type) ||
-      file.size > MAX_MEDIA_BYTES)) {
-    message.textContent = "Choose a supported photo/video file under 50 MB.";
+  const content = el("post-content-input").value.trim();
+  const file = el("post-media-file").files[0];
+
+  if (!content && !file) {
+    el("post-message").textContent = "Write something or select media first.";
     return;
   }
 
-  button.disabled = true;
-
-  let mediaUrl = null;
-  let mediaType = null;
-  let uploadedPath = null;
+  el("publish-post-btn").disabled = true;
+  el("post-message").textContent = "Publishing...";
 
   try {
-    message.textContent = file ? "Uploading media..." : "Publishing...";
+    let mediaUrl = null;
+    let mediaType = null;
 
     if (file) {
-      mediaType = IMAGE_TYPES.includes(file.type) ? "image" : "video";
-
-      uploadedPath =
-        `${currentUser.id}/${Date.now()}-${safeFileName(file.name)}`;
+      const path = currentUser.id + "/" + Date.now() + "-" + safeFileName(file.name);
 
       const {error:uploadError} = await client.storage
         .from(MEDIA_BUCKET)
-        .upload(uploadedPath,file,{
-          contentType:file.type,
-          upsert:false
-        });
+        .upload(path,file,{upsert:false});
 
       if (uploadError) throw uploadError;
 
-      mediaUrl = client.storage.from(MEDIA_BUCKET)
-        .getPublicUrl(uploadedPath).data.publicUrl;
+      const {data:urlData} = client.storage
+        .from(MEDIA_BUCKET)
+        .getPublicUrl(path);
+
+      mediaUrl = urlData.publicUrl;
+      mediaType = file.type;
     }
 
-    message.textContent = "Saving your post...";
-
-    const {error:postError} = await client.from("posts").insert({
+    const {error} = await client.from("posts").insert({
       user_id:currentUser.id,
-      content:caption,
+      content,
       media_url:mediaUrl,
       media_type:mediaType
     });
 
-    if (postError) throw postError;
+    if (error) throw error;
 
-    el("post-content").value = "";
+    el("post-content-input").value = "";
     clearMediaSelection();
-
-    message.textContent = "Post published!";
-
+    el("post-message").textContent = "Your post has been published!";
     await loadVyboraPosts();
 
   } catch (error) {
-    if (uploadedPath) {
-      await client.storage.from(MEDIA_BUCKET).remove([uploadedPath]);
-    }
-
-    message.textContent = "Could not publish: " + error.message;
-
+    el("post-message").textContent = "Could not publish: " + error.message;
   } finally {
-    button.disabled = false;
+    el("publish-post-btn").disabled = false;
   }
 });
 
-client.auth.onAuthStateChange(() => {
-  setTimeout(async () => {
-    await loadVyboraProfile();
-    await loadVyboraPosts();
-    await loadDiscoverPeople();
-  },0);
-});
+/* PROFILE NAVIGATION */
 
-async function initializeVybora() {
-  await loadVyboraProfile();
-  await loadVyboraPosts();
-  await loadDiscoverPeople();
+function showSection(sectionId) {
+  document.querySelectorAll(".page-section").forEach(section => {
+    section.classList.toggle("active",section.id === sectionId);
+  });
+
+  document.querySelectorAll(".nav-button").forEach(button => {
+    button.classList.toggle("active",button.dataset.section === sectionId);
+  });
+
+  if (sectionId === "vybora-discover") {
+    loadDiscoverPeople();
+  }
+
+  if (sectionId === "vybora-posts") {
+    loadVyboraPosts();
+  }
+
+  if (sectionId === "vybora-messages") {
+    loadConversations();
+  }
 }
 
-initializeVybora();
-</script>
+document.querySelectorAll(".nav-button").forEach(button => {
+  button.addEventListener("click",() => showSection(button.dataset.section));
+});
 
+/* INITIAL APP LOAD */
+
+async function initializeApp() {
+  const {data:{session},error} = await client.auth.getSession();
+
+  if (error) {
+    console.error(error);
+  }
+
+  currentUser = session?.user || null;
+
+  if (currentUser) {
+    await loadProfile();
+  }
+
+  updateAuthUI();
+  await loadVyboraPosts();
+
+  if (currentUser) {
+    await loadDiscoverPeople();
+  }
+}
+
+initializeApp();
+</script>
 </body>
 </html>
