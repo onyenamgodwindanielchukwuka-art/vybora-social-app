@@ -409,21 +409,66 @@ document.getElementById("save-profile-btn").addEventListener("click", async func
     return;
   }
 
+  const userIds = [...new Set(posts.map(post => post.user_id))];
+
+  const { data: profiles, error: profileError } = await client
+    .from("profiles")
+    .select("id, username, display_name, avatar_url")
+    .in("id", userIds);
+
+  if (profileError) {
+    list.textContent = "Could not load post authors: " + profileError.message;
+    return;
+  }
+
+  const profileMap = new Map(
+    profiles.map(profile => [profile.id, profile])
+  );
+
   posts.forEach(post => {
+    const profile = profileMap.get(post.user_id);
     const card = document.createElement("div");
+
     card.style.cssText =
       "background:white;padding:15px;margin:12px 0;border-radius:12px;text-align:left";
+
+    const author = document.createElement("div");
+    author.style.cssText =
+      "display:flex;align-items:center;gap:10px;margin-bottom:12px";
+
+    const avatar = document.createElement("img");
+    avatar.src = profile?.avatar_url || "";
+    avatar.alt = "Profile picture";
+    avatar.style.cssText =
+      "width:42px;height:42px;border-radius:50%;object-fit:cover;background:#e5d5ff";
+
+    if (!profile?.avatar_url) {
+      avatar.style.display = "none";
+    }
+
+    const details = document.createElement("div");
+
+    const name = document.createElement("strong");
+    name.textContent = profile?.display_name || "VYBORA Member";
+
+    const username = document.createElement("div");
+    username.style.cssText = "color:#777;font-size:13px";
+    username.textContent = "@" + (profile?.username || "member");
+
+    details.append(name, username);
+    author.append(avatar, details);
 
     const content = document.createElement("p");
     content.textContent = post.content;
 
     const date = document.createElement("small");
+    date.style.color = "#777";
     date.textContent = new Date(post.created_at).toLocaleString();
 
-    card.append(content, date);
+    card.append(author, content, date);
     list.appendChild(card);
   });
-}
+  }
 
 document.getElementById("publish-post-btn").addEventListener("click", async function() {
   const message = document.getElementById("post-message");
