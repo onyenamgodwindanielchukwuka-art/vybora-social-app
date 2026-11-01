@@ -180,6 +180,7 @@ document.getElementById("auth-form").addEventListener("submit", async function(e
     message.textContent = error.message;
   }
 });
+  
 </script>
 <section id="vybora-profile" style="display:none;max-width:600px;margin:30px auto;padding:24px;background:#f8f1ff;border-radius:16px;color:#24152f;text-align:center">
   <h2>My VYBORA Profile</h2>
@@ -219,7 +220,13 @@ document.getElementById("auth-form").addEventListener("submit", async function(e
   <button id="profile-logout" type="button">Log out</button>
   <p id="profile-message"></p>
 </section>
-
+<section id="vybora-posts" style="max-width:600px;margin:30px auto;padding:24px;background:#f8f1ff;border-radius:16px;color:#24152f">
+  <h2>VYBORA Feed</h2>
+  <textarea id="post-content" placeholder="What's happening in your world?" style="width:100%;min-height:100px;padding:12px"></textarea>
+  <button id="publish-post-btn" type="button">Publish Post</button>
+  <p id="post-message"></p>
+  <div id="posts-list"></div>
+</section>
 <script>
 async function loadVyboraProfile() {
   const box = document.getElementById("vybora-profile");
@@ -381,6 +388,79 @@ document.getElementById("save-profile-btn").addEventListener("click", async func
   document.getElementById("profile-avatar").src = avatarUrl;
   message.textContent = "Profile picture updated!";
 });
+  async function loadVyboraPosts() {
+  const list = document.getElementById("posts-list");
+  list.textContent = "Loading posts...";
+
+  const { data: posts, error } = await client
+    .from("posts")
+    .select("id, user_id, content, created_at")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    list.textContent = "Could not load posts: " + error.message;
+    return;
+  }
+
+  list.replaceChildren();
+
+  if (!posts || posts.length === 0) {
+    list.textContent = "No posts yet. Be the first to share!";
+    return;
+  }
+
+  posts.forEach(post => {
+    const card = document.createElement("div");
+    card.style.cssText =
+      "background:white;padding:15px;margin:12px 0;border-radius:12px;text-align:left";
+
+    const content = document.createElement("p");
+    content.textContent = post.content;
+
+    const date = document.createElement("small");
+    date.textContent = new Date(post.created_at).toLocaleString();
+
+    card.append(content, date);
+    list.appendChild(card);
+  });
+}
+
+document.getElementById("publish-post-btn").addEventListener("click", async function() {
+  const message = document.getElementById("post-message");
+  const input = document.getElementById("post-content");
+  const content = input.value.trim();
+
+  if (!content) {
+    message.textContent = "Please write something first.";
+    return;
+  }
+
+  const { data: { session }, error: sessionError } =
+    await client.auth.getSession();
+
+  if (sessionError || !session) {
+    message.textContent = "Please log in before publishing.";
+    return;
+  }
+
+  message.textContent = "Publishing...";
+
+  const { error } = await client.from("posts").insert({
+    user_id: session.user.id,
+    content: content
+  });
+
+  if (error) {
+    message.textContent = "Could not publish: " + error.message;
+    return;
+  }
+
+  input.value = "";
+  message.textContent = "Post published!";
+  await loadVyboraPosts();
+});
+
+loadVyboraPosts();
 </script>
 </body>
   </html>
