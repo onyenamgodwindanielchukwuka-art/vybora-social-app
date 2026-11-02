@@ -167,6 +167,32 @@ nav button{background:transparent;color:#554477}
 <section id="vybora-messages" class="panel">
   <h2>💬 Messages</h2>
   <p class="muted">Private conversations with people on VYBORA.</p>
+  <div class="group-create-box">
+  <h3>👥 Create a Group Conversation</h3>
+
+  <input
+    id="group-title"
+    type="text"
+    maxlength="80"
+    placeholder="Enter group name"
+  >
+
+  <p class="muted">Select the members you want to add:</p>
+
+  <div id="group-member-list">
+    Loading members...
+  </div>
+
+  <button
+    type="button"
+    id="create-group-btn"
+    class="primary"
+  >
+    Create Group
+  </button>
+
+  <p id="group-message" class="muted"></p>
+  </div>
   <p id="messages-status" class="muted">Log in to view your messages.</p>
   <div class="messages-layout">
     <div id="conversation-list" class="conversation-list"><p class="muted">Your conversations will appear here.</p></div>
@@ -350,6 +376,7 @@ async function refreshVyboraAfterAuth() {
   await loadVyboraPosts();
   await loadDiscoverPeople();
   await loadConversations();
+  await loadGroupMembers();
 }
 
 async function loadVyboraProfile() {
@@ -973,7 +1000,106 @@ async function startDirectConversation(profile) {
       "Could not start chat: " + messageErrorText(error);
   }
 }
+async function loadGroupMembers() {
+  const list = el("group-member-list");
 
+  if (!currentUser) {
+    list.textContent = "Log in to select group members.";
+    return;
+  }
+
+  list.textContent = "Loading members...";
+
+  try {
+    const {data,error} = await client
+      .from("profiles")
+      .select("id,display_name,username")
+      .neq("id",currentUser.id)
+      .order("display_name");
+
+    if (error) throw error;
+
+    list.replaceChildren();
+
+    if (!data || !data.length) {
+      list.textContent = "No other members found.";
+      return;
+    }
+
+    data.forEach(profile => {
+      const label = document.createElement("label");
+      label.style.display = "block";
+      label.style.margin = "8px 0";
+
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.name = "group-member";
+      checkbox.value = profile.id;
+
+      const name = document.createElement("span");
+      name.textContent =
+        " " + (profile.display_name || profile.username || "VYBORA Member");
+
+      label.append(checkbox,name);
+      list.append(label);
+    });
+
+  } catch (error) {
+    list.textContent = "Could not load members: " + error.message;
+  }
+}
+
+el("create-group-btn").addEventListener("click",async () => {
+  if (!currentUser) {
+    openAuth("login");
+    return;
+  }
+
+  const title = el("group-title").value.trim();
+  const selected = [
+    ...el("group-member-list").querySelectorAll(
+      'input[name="group-member"]:checked'
+    )
+  ].map(input => input.value);
+
+  if (!title) {
+    el("group-message").textContent = "Enter a group name.";
+    return;
+  }
+
+  if (selected.length < 1) {
+    el("group-message").textContent =
+      "Select at least one other member.";
+    return;
+  }
+
+  const button = el("create-group-btn");
+  button.disabled = true;
+  el("group-message").textContent = "Creating group...";
+
+  try {
+    const {data,error} = await client.rpc("create_conversation",{
+      p_type:"group",
+      p_title:title,
+      p_member_ids:selected
+    });
+
+    if (error) throw error;
+
+    activeConversationId = data;
+
+    el("group-title").value = "";
+    el("group-message").textContent = "Group created successfully!";
+
+    await loadConversations();
+
+  } catch (error) {
+    el("group-message").textContent =
+      "Could not create group: " + error.message;
+  } finally {
+    button.disabled = false;
+  }
+});
 async function openConversation(conversationId) {
   if (!currentUser) return;
 
